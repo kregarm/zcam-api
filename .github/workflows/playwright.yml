@@ -1,0 +1,29 @@
+name: API Tests
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+jobs:
+  test:
+    # Runs on every PR push; adding a label only triggers a run when it is "run-api".
+    if: github.event.action != 'labeled' || github.event.label.name == 'run-api'
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+        cache: npm
+    - name: Install dependencies
+      run: npm ci
+    - name: Run API tests
+      run: npx playwright test
+      env:
+        PETSTORE_BASE_URL: ${{ vars.PETSTORE_BASE_URL }}
+        PETSTORE_API_KEY: ${{ secrets.PETSTORE_API_KEY }}
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30
